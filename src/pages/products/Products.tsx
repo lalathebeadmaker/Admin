@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useProducts } from '../../hooks/useProducts';
 import { useRawMaterials } from '../../hooks/useRawMaterials';
-import { Product, ProductMaterial } from '../../types';
+import { Product } from '../../types';
 
 export default function Products() {
   const { isAdmin } = useAuth();

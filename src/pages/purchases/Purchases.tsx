@@ -1,10 +1,9 @@
 import { useState } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
 import { useRawMaterials } from '../../hooks/useRawMaterials';
 import { RawMaterialPurchase } from '../../types';
 
 export default function Purchases() {
-  const { isAdmin } = useAuth();
+  
   const { materials, purchases, isLoading, addPurchase, isAddingPurchase } = useRawMaterials();
   const [showAddForm, setShowAddForm] = useState(false);
   const [formData, setFormData] = useState<Partial<RawMaterialPurchase>>({

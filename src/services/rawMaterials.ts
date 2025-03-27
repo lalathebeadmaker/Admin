@@ -3,9 +3,7 @@ import {
   addDoc, 
   getDocs, 
   query, 
-  where, 
   orderBy, 
-  limit,
   doc,
   updateDoc,
   serverTimestamp

@@ -1,15 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
 import { useOrders } from '../../hooks/useOrders';
-import { useProducts } from '../../hooks/useProducts';
 import { OrderStatus } from '../../types';
 
 export default function Orders() {
-  const { isAdmin } = useAuth();
   const navigate = useNavigate();
   const { orders, isLoading, updateOrderStatus, isUpdating } = useOrders();
-  const { products } = useProducts();
   const [selectedStatus, setSelectedStatus] = useState<OrderStatus | 'all'>('all');
 
   const filteredOrders = selectedStatus === 'all'

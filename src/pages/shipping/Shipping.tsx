@@ -1,11 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
 import { useOrders } from '../../hooks/useOrders';
-import { Order, OrderStatus } from '../../types';
+import {  OrderStatus } from '../../types';
 
 export default function Shipping() {
-  const { isAdmin } = useAuth();
   const navigate = useNavigate();
   const { orders, isLoading, updateOrderStatus, isUpdating } = useOrders();
   const [selectedStatus, setSelectedStatus] = useState<OrderStatus | 'all'>('processing');

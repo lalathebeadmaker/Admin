@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useProducts } from '../../hooks/useProducts';
 import { useRawMaterials } from '../../hooks/useRawMaterials';
@@ -7,7 +7,6 @@ import { Product } from '../../types';
 
 export default function ProductDetails() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const { isAdmin } = useAuth();
   const { products, isLoading: isLoadingProducts, updateProduct, isUpdating } = useProducts();
   const { materials } = useRawMaterials();
