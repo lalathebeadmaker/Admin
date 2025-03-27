@@ -10,6 +10,7 @@ A React-based admin management application for an e-commerce website, built with
 - Order management
 - Shipping management
 - Real-time data updates with Firebase
+- 
 
 ## Prerequisites
 
