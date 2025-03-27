@@ -1,0 +1,101 @@
+/* tailwindcss directives */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  height: 100%;
+  background-color: white;
+}
+
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+#root {
+  height: 100%;
+}
+
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color: #213547;
+  
+  /* Define theme color variables */
+  --primary: #6A7861;
+  --primary-hover: #5a6852;
+  --primary-light: #f0f2ee;
+}
+
+a {
+  font-weight: 500;
+  text-decoration: inherit;
+}
+
+/* Global button styling */
+@layer components {
+  .btn {
+    @apply rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm 
+    bg-primary hover:bg-primary-600
+    focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary
+    disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply rounded-md px-3 py-2 text-sm font-semibold text-white shadow-sm 
+    bg-primary hover:bg-primary-600 hover:text-white
+    focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary
+    disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  /* Add this to ensure all buttons get the same styling */
+  button[type="submit"], 
+  button[type="button"],
+  button:not([class]) {
+    @apply bg-primary text-white hover:bg-primary-600;
+  }
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+a:hover {
+  color: #6A7861;
+}
+
+h1 {
+  font-size: 2.2em;
+  line-height: 1.1;
+}
+
+button:focus,
+button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+  }
+  a:hover {
+    color: #6A7861;
+  }
+}
+
+.lala-btn {
+  background-color: #6A7861;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.lala-btn:hover {
+  background-color: #7B8A71; /* Slightly lighter shade of sage green */
+}
