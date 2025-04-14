@@ -5,12 +5,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "lint": "eslint .",
-    "preview": "vite preview",
-    "predeploy": "npm run build",
-    "deploy": "gh-pages -d dist"
+    "vite:start": "vite",
+    "vite:build": "tsc -b && vite build"
+    
   },
   "dependencies": {
     "@headlessui/react": "^2.2.0",
