@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Order, OrderStatus, Currency } from '../types';
+import { Order } from '../types';
 import { ordersService } from '../services/orders';
 import { useProducts } from './useProducts';
 import { useLaborCosts } from './useLaborCosts';
@@ -37,9 +37,9 @@ export function useOrders() {
   };
 
   const calculateRealisticDeliveryDate = (items: Order['items']) => {
-    const pendingOrders = orders.filter(order => 
-      order.status === OrderStatus.PENDING || order.status === OrderStatus.PROCESSING
-    );
+    // const pendingOrders = orders.filter(order => 
+    //   order.status === OrderStatus.PENDING || order.status === OrderStatus.PROCESSING
+    // );
     
     const totalDaysNeeded = items.reduce((total, item) => {
       const product = products.find(p => p.id === item.productId);

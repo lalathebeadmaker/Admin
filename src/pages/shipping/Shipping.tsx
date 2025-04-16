@@ -5,16 +5,16 @@ import {  OrderStatus } from '../../types';
 
 export default function Shipping() {
   const navigate = useNavigate();
-  const { orders, isLoading, updateOrderStatus, isUpdating } = useOrders();
-  const [selectedStatus, setSelectedStatus] = useState<OrderStatus | 'all'>('processing');
+  const { orders, isLoading} = useOrders();
+  const [selectedStatus, setSelectedStatus] = useState<OrderStatus | 'all'>();
 
   const filteredOrders = selectedStatus === 'all'
     ? orders
     : orders.filter(order => order.status === selectedStatus);
 
-  const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
-    await updateOrderStatus({ id: orderId, status: newStatus });
-  };
+  // const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
+  //   // await updateOrderStatus({ id: orderId, status: newStatus });
+  // };
 
   if (isLoading) {
     return <div>Loading...</div>;
@@ -81,11 +81,11 @@ export default function Shipping() {
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                           {order.customerName}
                         </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                        {/* <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                           {order.shippingAddress.street}, {order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.zipCode}
-                        </td>
+                        </td> */}
                         <td className="whitespace-nowrap px-3 py-4 text-sm">
-                          <select
+                          {/* <select
                             value={order.status}
                             onChange={(e) => handleStatusChange(order.id, e.target.value as OrderStatus)}
                             disabled={isUpdating}
@@ -95,7 +95,7 @@ export default function Shipping() {
                             <option value="shipped">Shipped</option>
                             <option value="delivered">Delivered</option>
                             <option value="cancelled">Cancelled</option>
-                          </select>
+                          </select> */}
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                           {new Date(order.orderDate).toLocaleDateString()}

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useOrders } from '../../hooks/useOrders';
 import { useProducts } from '../../hooks/useProducts';
 import { useRawMaterials } from '../../hooks/useRawMaterials';
-import { OrderStatus, OrderItem, Currency, RawMaterial } from '../../types';
+import { OrderStatus, OrderItem, Currency } from '../../types';
 
 export default function Orders() {
   const navigate = useNavigate();
@@ -122,19 +122,19 @@ export default function Orders() {
     });
   };
 
-  const handleAddAdditionalMaterial = () => {
-    setCurrentItem(prev => ({
-      ...prev,
-      additionalMaterials: [...(prev.additionalMaterials || []), { materialId: '', quantity: 1 }]
-    }));
-  };
+  // const handleAddAdditionalMaterial = () => {
+  //   setCurrentItem(prev => ({
+  //     ...prev,
+  //     additionalMaterials: [...(prev.additionalMaterials || []), { materialId: '', quantity: 1 }]
+  //   }));
+  // };
 
-  const handleAddAdditionalCost = () => {
-    setCurrentItem(prev => ({
-      ...prev,
-      additionalCosts: [...(prev.additionalCosts || []), { name: '', amount: 0 }]
-    }));
-  };
+  // const handleAddAdditionalCost = () => {
+  //   setCurrentItem(prev => ({
+  //     ...prev,
+  //     additionalCosts: [...(prev.additionalCosts || []), { name: '', amount: 0 }]
+  //   }));
+  // };
 
   const handleAddSocialMedia = () => {
     if (currentSocialMedia.platform && currentSocialMedia.handle && currentSocialMedia.url) {
