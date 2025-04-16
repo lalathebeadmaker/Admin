@@ -33,12 +33,35 @@ export interface RawMaterialPurchase {
   purchasedBy: string;
 }
 
-export interface Product {
+export interface LaborCost {
+  id: string;
+  employeeName: string;
+  monthlySalary: number;
+  daysWorked: number;
+  hoursPerDay: number;
+  startDate: Date;
+  endDate?: Date;
+}
+
+export interface CostCategory {
   id: string;
   name: string;
   description: string;
-  baseCost: number;
+  type: 'raw_material' | 'labor' | 'other';
+}
+
+export interface ProductCost {
+  categoryId: string;
+  value: number;
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  baseCost?: number;
   materials: ProductMaterial[];
+  costs: ProductCost[];
+  timeToMake: number; // in days
 }
 
 export interface ProductMaterial {
@@ -46,31 +69,67 @@ export interface ProductMaterial {
   quantity: number;
 }
 
-export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+export enum OrderStatus {
+  PENDING = 'pending',
+  PROCESSING = 'processing',
+  COMPLETED = 'completed',
+  CANCELLED = 'cancelled'
+}
+
+export enum Currency {
+  NGN = 'NGN',
+  USD = 'USD'
+}
+
+export interface OrderItem {
+  productId: string;
+  quantity: number;
+  price: number;
+  additionalMaterials?: {
+    materialId: string;
+    quantity: number;
+  }[];
+  additionalCosts?: {
+    name: string;
+    amount: number;
+  }[];
+}
+
+export interface ShippingAddress {
+  street: string;
+  city: string;
+  state: string;
+  country: string;
+  postalCode: string;
+}
+
+export interface ShippingInfo {
+  customerPaid: number;
+  actualCost?: number;
+  trackingNumber?: string;
+  carrier?: string;
+}
 
 export interface Order {
   id: string;
   customerName: string;
   customerEmail: string;
   customerPhone: string;
-  shippingAddress: {
-    street: string;
-    city: string;
-    state: string;
-    zipCode: string;
-    country: string;
-  };
-  items: {
-    productId: string;
-    quantity: number;
-    price: number;
+  socialMedia?: {
+    platform: string;
+    handle: string;
+    url: string;
   }[];
+  items: OrderItem[];
   totalAmount: number;
+  currency: Currency;
   status: OrderStatus;
   orderDate: Date;
-  shippingDate?: Date;
-  trackingNumber?: string;
+  expectedDeliveryDate: Date;
+  realisticDeliveryDate: Date;
   notes?: string;
+  shippingAddress: ShippingAddress;
+  shippingInfo: ShippingInfo;
 }
 
 export interface Shipping {

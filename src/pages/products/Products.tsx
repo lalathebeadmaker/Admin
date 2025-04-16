@@ -3,19 +3,21 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useProducts } from '../../hooks/useProducts';
 import { useRawMaterials } from '../../hooks/useRawMaterials';
-import { Product } from '../../types';
+import { useLaborCosts } from '../../hooks/useLaborCosts';
+import { Product, ProductMaterial } from '../../types';
 
 export default function Products() {
   const { isAdmin } = useAuth();
   const navigate = useNavigate();
-  const { products, isLoading, addProduct, isAdding } = useProducts();
+  const { products, isLoading: isLoadingProducts, addProduct, isAdding } = useProducts();
   const { materials } = useRawMaterials();
+  const { calculateDailyRate } = useLaborCosts();
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState<Omit<Product, 'id'>>({
     name: '',
-    description: '',
-    baseCost: 0,
     materials: [],
+    costs: [],
+    timeToMake: 0,
   });
   const [currentMaterial, setCurrentMaterial] = useState<{
     materialId: string;
@@ -24,6 +26,31 @@ export default function Products() {
     materialId: '',
     quantity: 0,
   });
+
+  const calculateMaterialCost = (productMaterials: ProductMaterial[]) => {
+    return productMaterials.reduce((total, material) => {
+      const rawMaterial = materials.find(rm => rm.id === material.materialId);
+      if (rawMaterial) {
+        return total + (rawMaterial.lastPurchasePrice * material.quantity);
+      }
+      return total;
+    }, 0);
+  };
+
+  const calculateLaborCost = (timeToMake: number) => {
+    const dailyRate = calculateDailyRate();
+    return dailyRate * timeToMake;
+  };
+
+  const calculateTotalCost = (materials: ProductMaterial[], timeToMake: number) => {
+    const materialCost = calculateMaterialCost(materials);
+    const laborCost = calculateLaborCost(timeToMake);
+    return {
+      materialCost,
+      laborCost,
+      totalCost: materialCost + laborCost,
+    };
+  };
 
   const handleAddMaterial = () => {
     if (currentMaterial.quantity > 0 && currentMaterial.materialId) {
@@ -44,17 +71,25 @@ export default function Products() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await addProduct(formData);
+    const costs = calculateTotalCost(formData.materials, formData.timeToMake);
+    const productData = {
+      ...formData,
+      costs: [
+        { categoryId: 'raw_material', value: costs.materialCost },
+        { categoryId: 'labor', value: costs.laborCost },
+      ],
+    };
+    await addProduct(productData);
     setShowForm(false);
     setFormData({
       name: '',
-      description: '',
-      baseCost: 0,
       materials: [],
+      costs: [],
+      timeToMake: 0,
     });
   };
 
-  if (isLoading) {
+  if (isLoadingProducts) {
     return <div>Loading...</div>;
   }
 
@@ -65,7 +100,7 @@ export default function Products() {
         {isAdmin && (
           <button
             onClick={() => setShowForm(true)}
-            className="rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
+            className="btn lala-btn justify-center px-1 py-1"
           >
             Add Product
           </button>
@@ -91,33 +126,43 @@ export default function Products() {
             </div>
 
             <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                Description
-              </label>
-              <textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
-                required
-                rows={3}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="baseCost" className="block text-sm font-medium text-gray-700">
-                Base Cost
+              <label htmlFor="timeToMake" className="block text-sm font-medium text-gray-700">
+                Time to Make (days)
               </label>
               <input
                 type="number"
-                id="baseCost"
-                value={formData.baseCost}
-                onChange={(e) => setFormData({ ...formData, baseCost: Number(e.target.value) })}
+                id="timeToMake"
+                value={formData.timeToMake}
+                onChange={(e) => setFormData({ ...formData, timeToMake: Number(e.target.value) })}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
                 required
-                min="0"
-                step="0.01"
+                min="1"
+                step="0.5"
               />
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-sm font-medium text-gray-700">Cost Breakdown</h3>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <p className="text-sm text-gray-500">Material Cost</p>
+                  <p className="text-lg font-semibold text-gray-900">
+                    ₦{calculateMaterialCost(formData.materials).toFixed(2)}
+                  </p>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <p className="text-sm text-gray-500">Labor Cost</p>
+                  <p className="text-lg font-semibold text-gray-900">
+                    ₦{calculateLaborCost(formData.timeToMake).toFixed(2)}
+                  </p>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <p className="text-sm text-gray-500">Total Cost</p>
+                  <p className="text-lg font-semibold text-gray-900">
+                    ₦{calculateTotalCost(formData.materials, formData.timeToMake).totalCost.toFixed(2)}
+                  </p>
+                </div>
+              </div>
             </div>
 
             <div className="space-y-4">
@@ -142,12 +187,12 @@ export default function Products() {
                   className="block w-32 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
                   placeholder="Quantity"
                   min="0"
-                  step="0.01"
+                  step="0.5"
                 />
                 <button
                   type="button"
                   onClick={handleAddMaterial}
-                  className="rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500"
+                  className="btn lala-btn justify-center px-1 py-1"
                 >
                   Add
                 </button>
@@ -166,7 +211,7 @@ export default function Products() {
                         <button
                           type="button"
                           onClick={() => handleRemoveMaterial(index)}
-                          className="text-red-600 hover:text-red-800"
+                          className="btn lala-btn-danger justify-center px-1 py-1"
                         >
                           Remove
                         </button>
@@ -188,7 +233,7 @@ export default function Products() {
               <button
                 type="submit"
                 disabled={isAdding}
-                className="rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 disabled:opacity-50"
+                className="btn lala-btn justify-center px-1 py-1"
               >
                 {isAdding ? 'Adding...' : 'Add Product'}
               </button>
@@ -210,13 +255,16 @@ export default function Products() {
                         Name
                       </th>
                       <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                        Description
+                        Days to Make
                       </th>
                       <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                        Base Cost
+                        Material Cost
                       </th>
                       <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                        Materials
+                        Labor Cost
+                      </th>
+                      <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                        Total Cost
                       </th>
                       <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-0">
                         <span className="sr-only">Actions</span>
@@ -224,30 +272,36 @@ export default function Products() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {products.map((product) => (
-                      <tr key={product.id}>
-                        <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-0">
-                          {product.name}
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                          {product.description}
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                          {product.baseCost}
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                          {product.materials.length} materials
-                        </td>
-                        <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
-                          <button
-                            onClick={() => navigate(`/products/${product.id}`)}
-                            className="text-primary-600 hover:text-primary-900"
-                          >
-                            View
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                    {products.map((product) => {
+                      const costs = calculateTotalCost(product.materials, product.timeToMake);
+                      return (
+                        <tr key={product.id}>
+                          <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-0">
+                            {product.name}
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                            {product.timeToMake} days
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                            ₦{costs.materialCost.toFixed(2)}
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                            ₦{costs.laborCost.toFixed(2)}
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                            ₦{costs.totalCost.toFixed(2)}
+                          </td>
+                          <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
+                            <button
+                              onClick={() => navigate(`/products/${product.id}`)}
+                              className="text-primary-600 hover:text-primary-900"
+                            >
+                              View
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

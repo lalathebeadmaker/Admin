@@ -45,6 +45,7 @@ export default function Layout({ children }: LayoutProps) {
     { path: '/products', label: 'Products' },
     { path: '/purchases', label: 'Purchases' },
     { path: '/raw-materials', label: 'Raw Materials' },
+    { path: '/labor', label: 'Labor Costs' },
     { path: '/orders', label: 'Orders' },
     { path: '/shipping', label: 'Shipping' },
   ];

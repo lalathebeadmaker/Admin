@@ -11,6 +11,7 @@ import Purchases from './pages/purchases/Purchases';
 import RawMaterials from './pages/raw-materials/RawMaterials';
 import Orders from './pages/orders/Orders';
 import Shipping from './pages/shipping/Shipping';
+import LaborCosts from './pages/labor/LaborCosts';
 import ButtonExample from './components/ui/ButtonExample';
 
 const queryClient = new QueryClient();
@@ -59,6 +60,16 @@ function App() {
                   <PrivateRoute>
                     <Layout>
                       <RawMaterials />
+                    </Layout>
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/labor"
+                element={
+                  <PrivateRoute>
+                    <Layout>
+                      <LaborCosts />
                     </Layout>
                   </PrivateRoute>
                 }

@@ -6,8 +6,8 @@
   "type": "module",
   "scripts": {
     "vite:start": "vite",
-    "vite:build": "tsc -b && vite build"
-    
+    "vite:build": "tsc -b && vite build",
+    "dev": "vite"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.0",

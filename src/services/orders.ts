@@ -46,6 +46,12 @@ export const ordersService = {
     return docRef.id;
   },
 
+  // Update order
+  async updateOrder(id: string, order: Partial<Order>) {
+    const docRef = doc(db, 'orders', id);
+    await updateDoc(docRef, order);
+  },
+
   // Update order status
   async updateOrderStatus(id: string, status: OrderStatus) {
     const docRef = doc(db, 'orders', id);
