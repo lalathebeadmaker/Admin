@@ -12,6 +12,7 @@ export default function Orders() {
   const { materials } = useRawMaterials();
   const [selectedStatus, setSelectedStatus] = useState<OrderStatus | 'all'>('all');
   const [showAddForm, setShowAddForm] = useState(false);
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [formData, setFormData] = useState({
     customerName: '',
     customerEmail: '',
@@ -61,6 +62,18 @@ export default function Orders() {
   const filteredOrders = selectedStatus === 'all'
     ? orders
     : orders.filter(order => order.status === selectedStatus);
+
+  const toggleRowExpansion = (orderId: string) => {
+    setExpandedRows(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(orderId)) {
+        newSet.delete(orderId);
+      } else {
+        newSet.add(orderId);
+      }
+      return newSet;
+    });
+  };
 
   const calculateItemPrice = (item: OrderItem) => {
     const product = products.find(p => p.id === item.productId);
@@ -189,7 +202,8 @@ export default function Orders() {
         status: OrderStatus.PENDING,
         orderDate: new Date(),
         totalAmount: formData.items.reduce((total, item) => total + (item.price * item.quantity), 0),
-        currency: Currency.NGN
+        currency: Currency.NGN,
+        dateCompleted: new Date()
       };
 
       await addOrder(orderData);
@@ -599,7 +613,10 @@ export default function Orders() {
                     Order ID
                   </th>
                   <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                    Customer
+                    Customer Name
+                  </th>
+                  <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                    Customer Email
                   </th>
                   <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
                     Items
@@ -611,7 +628,10 @@ export default function Orders() {
                     Status
                   </th>
                   <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                    Date
+                    Order Date
+                  </th>
+                  <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                    Date Completed
                   </th>
                   <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-0">
                     <span className="sr-only">Actions</span>
@@ -620,18 +640,27 @@ export default function Orders() {
               </thead>
               <tbody>
                 {filteredOrders.map((order) => (
-                  <tr key={order.id}>
-                    <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-0">
-                      {order.id}
+                  <>
+                    <tr key={order.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => toggleRowExpansion(order.id)}>
+                      <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-0">
+                        <div className="flex items-center">
+                          <span className="mr-2">
+                            {expandedRows.has(order.id) ? '▼' : '▶'}
+                          </span>
+                          {order.id}
+                        </div>
+                      </td>
+                                          <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                      {order.customerName}
                     </td>
                     <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                      {order.customerName}
+                      {order.customerEmail}
                     </td>
                     <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                       {order.items.length} items
                     </td>
                     <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                      ₦{order.totalAmount.toFixed(2)}
+                      {order.currency.toString()} {order.totalAmount.toFixed(2)}
                     </td>
                     <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                       {order.status}
@@ -639,15 +668,41 @@ export default function Orders() {
                     <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                       {new Date(order.orderDate).toLocaleDateString()}
                     </td>
-                    <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
-                      <button
-                        onClick={() => navigate(`/orders/${order.id}`)}
-                        className="text-[#6A7861] hover:text-[#5a6852]"
-                      >
-                        View
-                      </button>
+                    <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                      {order.dateCompleted ? new Date(order.dateCompleted).toLocaleDateString() : 'Not completed'}
                     </td>
-                  </tr>
+                    <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/orders/${order.id}`);
+                          }}
+                          className="text-[#6A7861] hover:text-[#5a6852]"
+                        >
+                          View
+                        </button>
+                      </td>
+                    </tr>
+                    {expandedRows.has(order.id) && (
+                      <tr key={`${order.id}-expanded`}>
+                        <td colSpan={9} className="px-4 py-2 bg-gray-50">
+                          <div className="ml-6">
+                            <h4 className="text-sm font-medium text-gray-700 mb-2">Products:</h4>
+                            <div className="space-y-1">
+                              {order.items.map((item, index) => {
+                                const product = products.find(p => p.id === item.productId);
+                                return (
+                                  <div key={index} className="text-sm text-gray-600">
+                                    • {product?.name || 'Unknown Product'} (Qty: {item.quantity})
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </>
                 ))}
               </tbody>
             </table>

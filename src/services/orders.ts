@@ -7,10 +7,36 @@ import {
   updateDoc,
   query,
   where,
-  orderBy
+  orderBy,
+  Timestamp
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { Order, OrderStatus } from '../types';
+
+// Helper function to convert Firestore data to proper JavaScript objects
+const convertFirestoreData = (data: any): any => {
+  if (!data || typeof data !== 'object') return data;
+  
+  const converted: any = {};
+  
+  for (const [key, value] of Object.entries(data)) {
+    if (value instanceof Timestamp) {
+      // Convert Firestore Timestamp to JavaScript Date
+      converted[key] = value.toDate();
+    } else if (Array.isArray(value)) {
+      // Handle arrays
+      converted[key] = value.map(item => convertFirestoreData(item));
+    } else if (value && typeof value === 'object') {
+      // Handle nested objects
+      converted[key] = convertFirestoreData(value);
+    } else {
+      // Keep other values as is
+      converted[key] = value;
+    }
+  }
+  
+  return converted;
+};
 
 export const ordersService = {
   // Get all orders
@@ -21,10 +47,13 @@ export const ordersService = {
         orderBy('orderDate', 'desc')
       )
     );
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    })) as Order[];
+    return querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...convertFirestoreData(data)
+      } as Order;
+    });
   },
 
   // Get a single order
@@ -32,9 +61,10 @@ export const ordersService = {
     const docRef = doc(db, 'orders', id);
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
+      const data = docSnap.data();
       return {
         id: docSnap.id,
-        ...docSnap.data()
+        ...convertFirestoreData(data)
       } as Order;
     }
     return null;
@@ -67,9 +97,12 @@ export const ordersService = {
         orderBy('orderDate', 'desc')
       )
     );
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    })) as Order[];
+    return querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...convertFirestoreData(data)
+      } as Order;
+    });
   }
 }; 

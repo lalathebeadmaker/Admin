@@ -3,7 +3,6 @@ import {
   HomeIcon,
   CubeIcon,
   ClipboardDocumentListIcon,
-  TruckIcon,
   ShoppingCartIcon,
 } from '@heroicons/react/24/outline';
 
@@ -11,8 +10,7 @@ const navigation = [
   { name: 'Dashboard', href: '/', icon: HomeIcon },
   { name: 'Raw Materials', href: '/raw-materials', icon: CubeIcon },
   { name: 'Products', href: '/products', icon: ClipboardDocumentListIcon },
-  { name: 'Orders', href: '/orders', icon: ShoppingCartIcon },
-  { name: 'Shipping', href: '/shipping', icon: TruckIcon },
+  { name: 'Orders', href: '/orders', icon: ShoppingCartIcon }
 ];
 
 export default function Sidebar() {

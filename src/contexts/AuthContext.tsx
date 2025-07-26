@@ -59,20 +59,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
+      console.log('Signing in with email and password');
       // Set persistence to session level
       await setPersistence(auth, browserSessionPersistence);
-      
+      console.log('Setting persistence to session level');
       // Then sign in (this will be persisted according to the setting above)
       const result = await signInWithEmailAndPassword(auth, email, password);
+      console.log('Signed in with email and password');
       const userDoc = await getDoc(doc(db, 'users', result.user.uid));
+      console.log('Getting user document after sign in');
       if (userDoc.exists()) {
         setUser(userDoc.data() as User);
+        console.log('User document exists, setting user');
       }
       else {
         setUser(null);
+        console.log('User document does not exist, setting user to null');
       }
       setLoading(false);
-      
+      console.log('Setting loading to false');
     } catch (error) {
       console.error("Error during sign in:", error);
       throw error;

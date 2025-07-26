@@ -181,3 +181,15 @@ export interface Shipping {
   shippingInfo: ShippingInfo;
   status: 'pending' | 'in_transit' | 'delivered' | 'delayed';
 } 
+
+export interface MetaEntry {
+    key: string;
+    value: string;
+  }
+
+export interface LineItem {
+    product_id: number;
+    meta_data?: MetaEntry[];
+    quantity: number;
+    price: string; // from WooCommerce API
+}

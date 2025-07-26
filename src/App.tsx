@@ -10,7 +10,7 @@ import ProductDetails from './pages/products/ProductDetails';
 import Purchases from './pages/purchases/Purchases';
 import RawMaterials from './pages/raw-materials/RawMaterials';
 import Orders from './pages/orders/Orders';
-import Shipping from './pages/shipping/Shipping';
+import OrderDetails from './pages/orders/OrderDetails';
 import LaborCosts from './pages/labor/LaborCosts';
 import ButtonExample from './components/ui/ButtonExample';
 
@@ -95,15 +95,16 @@ function App() {
                 }
               />
               <Route
-                path="/shipping"
+                path="/orders/:id"
                 element={
                   <PrivateRoute>
                     <Layout>
-                      <Shipping />
+                      <OrderDetails />
                     </Layout>
                   </PrivateRoute>
                 }
               />
+              
               <Route
                 path="/button-examples"
                 element={
