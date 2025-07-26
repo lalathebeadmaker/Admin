@@ -3,13 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { useOrders } from '../../hooks/useOrders';
 import { useProducts } from '../../hooks/useProducts';
 import { useRawMaterials } from '../../hooks/useRawMaterials';
-import { OrderStatus, OrderItem, Currency } from '../../types';
+import { useLaborCosts } from '../../hooks/useLaborCosts';
+import { OrderStatus, OrderItem, Currency, ProductMaterial } from '../../types';
 
 export default function Orders() {
   const navigate = useNavigate();
   const { orders, isLoading, addOrder, isAdding } = useOrders();
   const { products } = useProducts();
   const { materials } = useRawMaterials();
+  const { calculateDailyRate } = useLaborCosts();
   const [selectedStatus, setSelectedStatus] = useState<OrderStatus | 'all'>('all');
   const [showAddForm, setShowAddForm] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
@@ -19,15 +21,20 @@ export default function Orders() {
     customerPhone: '',
     socialMedia: [] as { platform: string; handle: string; url: string; }[],
     items: [] as OrderItem[],
-    shippingAddress: {
-      street: '',
-      city: '',
-      state: '',
-      country: '',
-      postalCode: ''
-    },
-    shippingInfo: {
-      customerPaid: 0
+    shipping: {
+      shippingAddress: {
+        street: '',
+        city: '',
+        state: '',
+        country: '',
+        postalCode: ''
+      },
+      shippingInfo: {
+        customerPaid: 0,
+        estimatedDeliveryDate: undefined,
+        actualDeliveryDate: undefined
+      },
+      status: 'pending' as const
     },
     totalAmountPaid: 0,
     orderSource: 'website' // Default to website
@@ -59,6 +66,34 @@ export default function Orders() {
     'referral'
   ];
 
+  // Calculate material cost for product materials
+  const calculateMaterialCost = (productMaterials: ProductMaterial[]) => {
+    return productMaterials.reduce((total, material) => {
+      const rawMaterial = materials.find(rm => rm.id === material.materialId);
+      if (rawMaterial) {
+        return total + (rawMaterial.lastPurchasePrice * material.quantity);
+      }
+      return total;
+    }, 0);
+  };
+
+  // Calculate labor cost
+  const calculateLaborCost = (timeToMake: number) => {
+    const dailyRate = calculateDailyRate();
+    return dailyRate * timeToMake;
+  };
+
+  // Calculate total cost using the same formula as ProductDetails
+  const calculateTotalCost = (materials: ProductMaterial[], timeToMake: number) => {
+    const materialCost = calculateMaterialCost(materials);
+    const laborCost = calculateLaborCost(timeToMake);
+    return {
+      materialCost,
+      laborCost,
+      totalCost: materialCost + laborCost,
+    };
+  };
+
   const filteredOrders = selectedStatus === 'all'
     ? orders
     : orders.filter(order => order.status === selectedStatus);
@@ -79,15 +114,8 @@ export default function Orders() {
     const product = products.find(p => p.id === item.productId);
     if (!product) return 0;
 
-    // Calculate base cost from materials
-    const materialCost = product.materials.reduce((total, material) => {
-      const rawMaterial = materials.find(m => m.id === material.materialId);
-      if (!rawMaterial) return total;
-      return total + (material.quantity * rawMaterial.lastPurchasePrice);
-    }, 0);
-
-    // Calculate labor cost
-    const laborCost = product.costs.find(cost => cost.categoryId === 'labor')?.value || 0;
+    // Use the same formula as ProductDetails page
+    const { totalCost: productCost } = calculateTotalCost(product.materials, product.timeToMake);
 
     // Calculate additional material costs
     const additionalMaterialCost = item.additionalMaterials?.reduce((total, material) => {
@@ -99,7 +127,7 @@ export default function Orders() {
     // Calculate additional costs
     const additionalCosts = item.additionalCosts?.reduce((total, cost) => total + cost.amount, 0) || 0;
 
-    return materialCost + laborCost + additionalMaterialCost + additionalCosts;
+    return productCost + additionalMaterialCost + additionalCosts;
   };
 
   const handleAddItem = () => {
@@ -184,9 +212,9 @@ export default function Orders() {
       return;
     }
 
-    if (!formData.shippingAddress.street || !formData.shippingAddress.city || 
-        !formData.shippingAddress.state || !formData.shippingAddress.country || 
-        !formData.shippingAddress.postalCode) {
+    if (!formData.shipping.shippingAddress.street || !formData.shipping.shippingAddress.city || 
+        !formData.shipping.shippingAddress.state || !formData.shipping.shippingAddress.country || 
+        !formData.shipping.shippingAddress.postalCode) {
       alert('Please fill in all required shipping address information');
       return;
     }
@@ -214,15 +242,20 @@ export default function Orders() {
         customerPhone: '',
         socialMedia: [],
         items: [],
-        shippingAddress: {
-          street: '',
-          city: '',
-          state: '',
-          country: '',
-          postalCode: ''
-        },
-        shippingInfo: {
-          customerPaid: 0
+        shipping: {
+          shippingAddress: {
+            street: '',
+            city: '',
+            state: '',
+            country: '',
+            postalCode: ''
+          },
+          shippingInfo: {
+            customerPaid: 0,
+            estimatedDeliveryDate: undefined,
+            actualDeliveryDate: undefined
+          },
+          status: 'pending'
         },
         totalAmountPaid: 0,
         orderSource: 'website'
@@ -458,10 +491,13 @@ export default function Orders() {
                     <label className="block text-sm font-medium text-gray-700">Street</label>
                     <input
                       type="text"
-                      value={formData.shippingAddress.street}
+                      value={formData.shipping.shippingAddress.street}
                       onChange={(e) => setFormData(prev => ({
                         ...prev,
-                        shippingAddress: { ...prev.shippingAddress, street: e.target.value }
+                        shipping: { 
+                          ...prev.shipping, 
+                          shippingAddress: { ...prev.shipping.shippingAddress, street: e.target.value }
+                        }
                       }))}
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#6A7861] focus:ring-[#6A7861] sm:text-sm"
                       required
@@ -471,10 +507,13 @@ export default function Orders() {
                     <label className="block text-sm font-medium text-gray-700">City</label>
                     <input
                       type="text"
-                      value={formData.shippingAddress.city}
+                      value={formData.shipping.shippingAddress.city}
                       onChange={(e) => setFormData(prev => ({
                         ...prev,
-                        shippingAddress: { ...prev.shippingAddress, city: e.target.value }
+                        shipping: { 
+                          ...prev.shipping, 
+                          shippingAddress: { ...prev.shipping.shippingAddress, city: e.target.value }
+                        }
                       }))}
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#6A7861] focus:ring-[#6A7861] sm:text-sm"
                       required
@@ -484,10 +523,13 @@ export default function Orders() {
                     <label className="block text-sm font-medium text-gray-700">State</label>
                     <input
                       type="text"
-                      value={formData.shippingAddress.state}
+                      value={formData.shipping.shippingAddress.state}
                       onChange={(e) => setFormData(prev => ({
                         ...prev,
-                        shippingAddress: { ...prev.shippingAddress, state: e.target.value }
+                        shipping: { 
+                          ...prev.shipping, 
+                          shippingAddress: { ...prev.shipping.shippingAddress, state: e.target.value }
+                        }
                       }))}
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#6A7861] focus:ring-[#6A7861] sm:text-sm"
                       required
@@ -497,10 +539,13 @@ export default function Orders() {
                     <label className="block text-sm font-medium text-gray-700">Country</label>
                     <input
                       type="text"
-                      value={formData.shippingAddress.country}
+                      value={formData.shipping.shippingAddress.country}
                       onChange={(e) => setFormData(prev => ({
                         ...prev,
-                        shippingAddress: { ...prev.shippingAddress, country: e.target.value }
+                        shipping: { 
+                          ...prev.shipping, 
+                          shippingAddress: { ...prev.shipping.shippingAddress, country: e.target.value }
+                        }
                       }))}
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#6A7861] focus:ring-[#6A7861] sm:text-sm"
                       required
@@ -510,10 +555,13 @@ export default function Orders() {
                     <label className="block text-sm font-medium text-gray-700">Postal Code</label>
                     <input
                       type="text"
-                      value={formData.shippingAddress.postalCode}
+                      value={formData.shipping.shippingAddress.postalCode}
                       onChange={(e) => setFormData(prev => ({
                         ...prev,
-                        shippingAddress: { ...prev.shippingAddress, postalCode: e.target.value }
+                        shipping: { 
+                          ...prev.shipping, 
+                          shippingAddress: { ...prev.shipping.shippingAddress, postalCode: e.target.value }
+                        }
                       }))}
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#6A7861] focus:ring-[#6A7861] sm:text-sm"
                       required
@@ -544,10 +592,13 @@ export default function Orders() {
                     <label className="block text-sm font-medium text-gray-700">Amount Paid for Shipping</label>
                     <input
                       type="number"
-                      value={formData.shippingInfo.customerPaid}
+                      value={formData.shipping.shippingInfo.customerPaid}
                       onChange={(e) => setFormData(prev => ({
                         ...prev,
-                        shippingInfo: { ...prev.shippingInfo, customerPaid: parseFloat(e.target.value) }
+                        shipping: { 
+                          ...prev.shipping, 
+                          shippingInfo: { ...prev.shipping.shippingInfo, customerPaid: parseFloat(e.target.value) }
+                        }
                       }))}
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#6A7861] focus:ring-[#6A7861] sm:text-sm"
                       min="0"
@@ -633,6 +684,12 @@ export default function Orders() {
                   <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
                     Date Completed
                   </th>
+                  <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                    Expected Delivery
+                  </th>
+                  <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
+                    Actual Delivery
+                  </th>
                   <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-0">
                     <span className="sr-only">Actions</span>
                   </th>
@@ -671,6 +728,84 @@ export default function Orders() {
                     <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                       {order.dateCompleted ? new Date(order.dateCompleted).toLocaleDateString() : 'Not completed'}
                     </td>
+                    <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                      {order.shipping.shippingInfo.estimatedDeliveryDate 
+                        ? (() => {
+                            const expectedDate = order.shipping.shippingInfo.estimatedDeliveryDate instanceof Date 
+                              ? order.shipping.shippingInfo.estimatedDeliveryDate
+                              : new Date(order.shipping.shippingInfo.estimatedDeliveryDate);
+                            const today = new Date();
+                            const diffTime = expectedDate.getTime() - today.getTime();
+                            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                            
+                            let statusColor = 'text-green-600';
+                            let statusText = '';
+                            
+                            if (order.status === 'completed' || order.status === 'delivered') {
+                              statusText = 'Order completed';
+                              statusColor = 'text-gray-600';
+                            } else if (order.status === 'shipped') {
+                              statusText = 'Order shipped';
+                              statusColor = 'text-blue-600';
+                            } else if (diffDays < 0) {
+                              statusText = `${Math.abs(diffDays)} days overdue`;
+                              statusColor = 'text-red-600';
+                            } else if (diffDays <= 3) {
+                              statusText = `${diffDays} days left`;
+                              statusColor = 'text-yellow-600';
+                            } else {
+                              statusText = `${diffDays} days left`;
+                              statusColor = 'text-green-600';
+                            }
+                            
+                            return (
+                              <div>
+                                <div>{expectedDate.toLocaleDateString()}</div>
+                                <div className={`font-medium ${statusColor}`}>{statusText}</div>
+                              </div>
+                            );
+                          })()
+                        : 'Not set'}
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                      {order.shipping.shippingInfo.actualDeliveryDate 
+                        ? (() => {
+                            const actualDate = order.shipping.shippingInfo.actualDeliveryDate instanceof Date 
+                              ? order.shipping.shippingInfo.actualDeliveryDate
+                              : new Date(order.shipping.shippingInfo.actualDeliveryDate);
+                            const expectedDate = order.shipping.shippingInfo.estimatedDeliveryDate 
+                              ? (order.shipping.shippingInfo.estimatedDeliveryDate instanceof Date 
+                                  ? order.shipping.shippingInfo.estimatedDeliveryDate
+                                  : new Date(order.shipping.shippingInfo.estimatedDeliveryDate))
+                              : null;
+                            
+                            if (expectedDate) {
+                              const diffTime = actualDate.getTime() - expectedDate.getTime();
+                              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                              
+                              let statusColor = 'text-green-600';
+                              let statusText = 'On time';
+                              
+                              if (diffDays > 0) {
+                                statusText = `${diffDays} days late`;
+                                statusColor = 'text-red-600';
+                              } else if (diffDays < 0) {
+                                statusText = `${Math.abs(diffDays)} days early`;
+                                statusColor = 'text-green-600';
+                              }
+                              
+                              return (
+                                <div>
+                                  <div>{actualDate.toLocaleDateString()}</div>
+                                  <div className={`font-medium ${statusColor}`}>{statusText}</div>
+                                </div>
+                              );
+                            }
+                            
+                            return actualDate.toLocaleDateString();
+                          })()
+                        : 'Not delivered'}
+                    </td>
                     <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
                         <button
                           onClick={(e) => {
@@ -685,7 +820,7 @@ export default function Orders() {
                     </tr>
                     {expandedRows.has(order.id) && (
                       <tr key={`${order.id}-expanded`}>
-                        <td colSpan={9} className="px-4 py-2 bg-gray-50">
+                        <td colSpan={10} className="px-4 py-2 bg-gray-50">
                           <div className="ml-6">
                             <h4 className="text-sm font-medium text-gray-700 mb-2">Products:</h4>
                             <div className="space-y-1">

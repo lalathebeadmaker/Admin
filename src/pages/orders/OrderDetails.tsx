@@ -10,7 +10,7 @@ export default function OrderDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { products, isLoading: productsLoading } = useProducts();
-  const { materials, isLoading: materialsLoading } = useRawMaterials();
+  const { materials } = useRawMaterials();
   const { calculateDailyRate } = useLaborCosts();
   const [order, setOrder] = useState<Order | null>(null);
   
